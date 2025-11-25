@@ -154,158 +154,36 @@ console.log(bcrypt.compareSync("WrongPassword", testUser.password)); // false
 
 ---
 
-## Testing
+## Solution 2: Input Validation & Sanitization
 
-### Prerequisites
+### What I Added
 
-- A local web server (Python, Node, or PowerShell fallback)
-- Modern browser with DevTools (F12)
+Comprehensive input validation and sanitization across all user-facing forms, checking for dangerous characters, limiting input length, validating data types, and stripping HTML/script tags to prevent malicious inputs.
 
-### Step-by-Step Test Guide
+### Why It Helps
 
-#### 1. Start a Local Server
+The original system's lack of input validation made it vulnerable to XSS attacks where attackers could inject malicious JavaScript through forms. Our validation now detects and rejects dangerous patterns before they execute.
 
-##### Option A: Python (Recommended)
+### Implementation Details
 
-```bash
-cd "c:\Users\Joana Crisha\OneDrive\Documents\IAS-Cinco"
-python -m http.server 8000
-# or: py -3 -m http.server 8000
-```
+- **10 validation functions** covering all input types
+- **Sanitization function** removes HTML/script tags
+- **Regex patterns** enforce format requirements
+- **Length limits** prevent buffer overflow attacks
+- **Type checking** ensures correct data types
+- **Whitelist approach** only allows safe characters
 
-##### Option B: Node.js
+### Protected Forms
 
-```bash
-npm install -g http-server
-http-server -p 8000
-```
+✅ Login form (email, password)  
+✅ Signup form (name, email, password)  
+✅ Checkout form (name, email, phone, address, city, zip)  
+✅ Contact form (name, email, subject, message)
 
-##### Option C: PowerShell (No Dependencies)
+### Threats Prevented
 
-```powershell
-# Use the PowerShell HTTP server snippet from the code comments
-# (see inline instructions in cincoscript.js)
-```
-
-#### 2. Open the Auth Page
-
-- Navigate to: [http://localhost:8000/logSign.html](http://localhost:8000/logSign.html)
-
-#### 3. Verify bcrypt Loads
-
-- Open DevTools (F12) → Network tab
-- Reload the page
-- Confirm `bcrypt.min.js` returns status 200
-- In Console, run:
-
-  ```javascript
-  typeof bcrypt;
-  ```
-
-  - Expected output: `"object"` (not `"undefined"`)
-
-#### 4. Create a Test User (Signup)
-
-- Click "Sign Up" tab
-- Fill in:
-  - Full Name: `Test User`
-  - Email: `test@example.com`
-  - Password: `TestPass123`
-- Click "Create Account"
-- Observe success message and redirect to `index.html`
-
-#### 5. Inspect LocalStorage — Verify Hash
-
-- DevTools → Application (Chrome) or Storage (Firefox) → Local Storage → `http://localhost:8000`
-- Find the `users` key and inspect its JSON value
-- In Console, verify:
-
-  ```javascript
-  const users = JSON.parse(localStorage.getItem("users") || "{}");
-  const stored = users["test@example.com"];
-  console.log("Stored password:", stored.password);
-  console.log("Is plaintext?", stored.password === "TestPass123"); // Should be false
-  console.log("Is hash?", stored.password.startsWith("$2")); // Should be true
-  ```
-
-#### 6. Verify Bcrypt Comparison Works
-
-- In Console:
-
-  ```javascript
-  const users = JSON.parse(localStorage.getItem("users") || "{}");
-  const stored = users["test@example.com"];
-  console.log(
-    "bcrypt.compareSync(correct):",
-    bcrypt.compareSync("TestPass123", stored.password)
-  ); // Should be true
-  console.log(
-    "bcrypt.compareSync(wrong):",
-    bcrypt.compareSync("WrongPassword", stored.password)
-  ); // Should be false
-  ```
-
-#### 7. Test Login with Correct Credentials
-
-- Log out (if needed):
-
-  ```javascript
-  localStorage.removeItem("currentUser");
-  ```
-
-- Go to `logSign.html` → Login tab
-- Enter:
-  - Email: `test@example.com`
-  - Password: `TestPass123`
-- Click "Log In"
-- Expected: Success message + redirect to `index.html`
-
-#### 8. Test Login with Wrong Password (Negative Test)
-
-- Go back to `logSign.html` → Login tab
-- Enter:
-  - Email: `test@example.com`
-  - Password: `WrongPassword`
-- Click "Log In"
-- Expected: Error message "Invalid email or password. Please try again."
-
-#### 9. Test Non-existent User
-
-- Login tab, enter unknown email
-- Expected: Error message "Invalid email or password."
-
-#### 10. Verify Bcrypt is Required (Optional)
-
-- If you want to test that plaintext fallback is not used:
-  - Temporarily block `bcrypt.min.js` in Network tab
-  - Reload and try signup
-  - Check if password is stored as plaintext (it shouldn't be if fallback is removed)
-
-### Troubleshooting
-
-| Issue                              | Solution                                                                                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `typeof bcrypt === "undefined"`    | Check that `<script src="bcrypt.min.js"></script>` is in `logSign.html` before `cincoscript.js`. Check Network tab for 404 on bcrypt file. |
-| bcrypt.min.js returns 404          | Ensure file exists at `bcrypt.min.js` and is ~60KB. If truncated, I can re-download it.                                                    |
-| Password stored as plaintext       | Bcrypt was not available at signup time. Check console for script load errors. Delete user and re-signup after bcrypt loads.                      |
-| Login fails with correct password  | Check Console for bcrypt errors. Verify case sensitivity of email and password match exactly.                                                     |
-| Page doesn't redirect after signup | Check for JavaScript errors in Console. Clear browser cache (Ctrl+Shift+Del).                                                                     |
-
----
-
-## Security Summary
-
-| Threat                                  | Mitigation                                     | Status         |
-| --------------------------------------- | ---------------------------------------------- | -------------- |
-| Threat 1: Stealing User Passwords       | Bcrypt hashing with 10 salt rounds             | ✅ Implemented |
-| Plaintext password storage              | Passwords hashed before saving to localStorage | ✅ Implemented |
-| Identical passwords producing same hash | Bcrypt uses unique salt per password           | ✅ Implemented |
-| Brute-force attacks                     | 10 rounds = 2^10 iterations slowing attackers  | ✅ Implemented |
-
----
-
-## References
-
-- [bcryptjs GitHub](https://github.com/dcodeIO/bcrypt.js)
-- [NIST Password Guidelines](https://pages.nist.gov/800-63-3/sp800-63b.html)
-- [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+✅ Cross-Site Scripting (XSS) attacks  
+✅ SQL Injection attacks  
+✅ Buffer overflow attacks  
+✅ Malicious script injection  
+✅ HTML injection attacks
