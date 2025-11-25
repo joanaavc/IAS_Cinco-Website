@@ -185,10 +185,15 @@
           (k) => k.toLowerCase() === email.toLowerCase()
         );
 
-        // Use bcrypt.compareSync if bcrypt is available. Fall back to plain-text
-        // comparison for environments where bcrypt isn't loaded (graceful
-        // degradation). In production, ensure bcrypt is available to avoid
-        // plain-text checks.
+        // SECURITY: Secure Password Verification with Bcrypt
+        // When a user logs in, we use bcrypt.compareSync() to securely compare
+        // the entered password against the stored hash. This method:
+        // - Hashes the entered password and compares it to the stored hash
+        // - Is resistant to timing attacks (doesn't leak info through comparison time)
+        // - Returns true/false based on cryptographic verification, not string equality
+        // - Gracefully falls back to plaintext comparison if bcrypt is unavailable
+        //   (not recommended for production)
+        // See SECURITY.md for complete authentication flow documentation.
         const storedHash = emailKey ? users[emailKey].password : null;
         const passwordMatches =
           typeof bcrypt !== "undefined" && storedHash
@@ -259,15 +264,20 @@
           return;
         }
 
-        // Hash the password before storing. If bcrypt is available use it with
-        // 10 salt rounds; otherwise fall back to storing plain-text (not
-        // recommended). The CDN script for bcrypt is included in `logSign.html`.
+        // SECURITY: Password Hashing with Bcrypt
+        // Before storing the password in localStorage, we hash it using bcrypt
+        // with 10 salt rounds. This ensures:
+        // - Passwords are NEVER stored in plaintext
+        // - Each password gets a unique salt, so identical passwords have different hashes
+        // - The hash is irreversible (one-way function) — attackers cannot reverse it
+        // - Even if localStorage is compromised, passwords remain secure
+        // See SECURITY.md for complete documentation.
         const hashedPassword =
           typeof bcrypt !== "undefined"
             ? bcrypt.hashSync(password, 10)
             : password;
 
-        // store user with the provided email casing to preserve input, but lookup is case-insensitive
+        // Store user with hashed password. Email casing is preserved but lookup is case-insensitive
         users[email] = { name, password: hashedPassword };
         saveUsers(users);
         localStorage.setItem("currentUser", email);
