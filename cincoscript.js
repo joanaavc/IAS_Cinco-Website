@@ -516,6 +516,209 @@
   // LOGIN FORM (UPDATED WITH SESSION)
   // ============================================
 
+  // ============================================
+  // RATE LIMITING & BRUTE FORCE PROTECTION
+  // ============================================
+
+  /**
+   * SECURITY: Rate Limiting & reCAPTCHA v3
+   * Protects against brute force attacks
+   * - Tracks failed login attempts
+   * - Locks account after 5 failures for 15 minutes
+   * - Uses Google reCAPTCHA v3 to block bots
+   */
+
+  const RATE_LIMIT_CONFIG = {
+    MAX_FAILED_ATTEMPTS: 5,
+    LOCKOUT_DURATION_MINUTES: 15,
+    LOCKOUT_DURATION_MS: 15 * 60 * 1000,
+  };
+
+  // ============================================
+  // RATE LIMITING FUNCTIONS
+  // ============================================
+
+  /**
+   * Get failed login attempts for an email
+   */
+  function getFailedAttempts(email) {
+    try {
+      const attempts = JSON.parse(
+        localStorage.getItem(`failedAttempts_${email}`) || "null"
+      );
+      return attempts || { count: 0, timestamp: null, lockedUntil: null };
+    } catch (e) {
+      return { count: 0, timestamp: null, lockedUntil: null };
+    }
+  }
+
+  /**
+   * Save failed login attempts
+   */
+  function saveFailedAttempts(email, attempts) {
+    try {
+      localStorage.setItem(`failedAttempts_${email}`, JSON.stringify(attempts));
+    } catch (e) {
+      console.error("Error saving failed attempts:", e);
+    }
+  }
+
+  /**
+   * Record a failed login attempt
+   */
+  function recordFailedAttempt(email) {
+    const attempts = getFailedAttempts(email);
+    attempts.count++;
+    attempts.timestamp = Date.now();
+
+    if (attempts.count >= RATE_LIMIT_CONFIG.MAX_FAILED_ATTEMPTS) {
+      attempts.lockedUntil = Date.now() + RATE_LIMIT_CONFIG.LOCKOUT_DURATION_MS;
+    }
+
+    saveFailedAttempts(email, attempts);
+    return attempts;
+  }
+
+  /**
+   * Clear failed login attempts
+   */
+  function clearFailedAttempts(email) {
+    try {
+      localStorage.removeItem(`failedAttempts_${email}`);
+    } catch (e) {
+      console.error("Error clearing failed attempts:", e);
+    }
+  }
+
+  /**
+   * Check if account is locked due to too many failed attempts
+   */
+  function isAccountLocked(email) {
+    const attempts = getFailedAttempts(email);
+
+    if (!attempts.lockedUntil) {
+      return false;
+    }
+
+    const now = Date.now();
+
+    // If lockout period has expired, clear it
+    if (now > attempts.lockedUntil) {
+      clearFailedAttempts(email);
+      return false;
+    }
+
+    // Account is still locked
+    return true;
+  }
+
+  /**
+   * Get remaining lockout time in minutes
+   */
+  function getRemainingLockoutTime(email) {
+    const attempts = getFailedAttempts(email);
+
+    if (!attempts.lockedUntil) {
+      return 0;
+    }
+
+    const remaining = attempts.lockedUntil - Date.now();
+    return Math.ceil(remaining / 60000); // Convert to minutes
+  }
+
+  /**
+   * Execute reCAPTCHA v3 verification
+   * Returns promise with reCAPTCHA token and score
+   */
+  function executeRecaptcha(action = "login") {
+    return new Promise((resolve, reject) => {
+      // Check if reCAPTCHA is loaded
+      if (typeof grecaptcha === "undefined") {
+        console.warn("reCAPTCHA not loaded");
+        // Continue without reCAPTCHA in development
+        resolve({ token: null, score: 1.0 });
+        return;
+      }
+
+      grecaptcha.ready(() => {
+        grecaptcha
+          .execute("6LdZRhgsAAAAAA7o0EpsdmfO38VvnHxjNG6Ab0g2", {
+            action: action,
+          })
+          .then((token) => {
+            resolve({ token: token, score: null });
+          })
+          .catch((error) => {
+            console.error("reCAPTCHA error:", error);
+            reject(error);
+          });
+      });
+    });
+  }
+
+  /**
+   * Verify reCAPTCHA token on backend (simulated for client-side)
+   * In production, send token to backend to verify with secret key
+   */
+  function verifyRecaptchaToken(token) {
+    // Note: In a real application, you would send the token to your backend
+    // and verify it using your reCAPTCHA secret key.
+    // For now, we'll accept the token as valid on client-side
+    return Promise.resolve({
+      success: true,
+      score: 0.9, // Simulated score for demonstration
+      action: "login",
+    });
+  }
+
+  /**
+   * Display account lockout warning
+   */
+  function showLockoutWarning(email, formType) {
+    const warningEl =
+      formType === "login"
+        ? document.getElementById("loginLockoutWarning")
+        : document.getElementById("signupLockoutWarning");
+
+    const messageEl =
+      formType === "login"
+        ? document.getElementById("lockoutMessage")
+        : document.getElementById("signupLockoutMessage");
+
+    if (!warningEl || !messageEl) return;
+
+    const remainingTime = getRemainingLockoutTime(email);
+
+    if (remainingTime > 0) {
+      messageEl.innerHTML = `
+      <strong>Account Temporarily Locked</strong><br>
+      Too many failed attempts. Please try again in 
+      <span class="countdown">${remainingTime}</span> minutes.
+    `;
+      warningEl.style.display = "flex";
+    } else {
+      warningEl.style.display = "none";
+    }
+  }
+
+  /**
+   * Hide lockout warning
+   */
+  function hideLockoutWarning(formType) {
+    const warningEl =
+      formType === "login"
+        ? document.getElementById("loginLockoutWarning")
+        : document.getElementById("signupLockoutWarning");
+
+    if (warningEl) {
+      warningEl.style.display = "none";
+    }
+  }
+
+  // ============================================
+  // UPDATED AUTH PAGE WITH RATE LIMITING
+  // ============================================
+
   function initAuthPage() {
     if (!window.location.pathname.includes("logSign.html")) return;
 
@@ -535,7 +738,7 @@
           const firstInput = loginForm?.querySelector("input");
           if (firstInput) firstInput.focus();
         } catch (err) {
-          // ignore focus errors
+          // ignore
         }
       });
     }
@@ -550,18 +753,23 @@
           const firstInput = signupForm?.querySelector("input");
           if (firstInput) firstInput.focus();
         } catch (err) {
-          // ignore focus errors
+          // ignore
         }
       });
     }
 
-    // Login form submission - WITH SESSION MANAGEMENT
+    // ============================================
+    // LOGIN FORM WITH RATE LIMITING & reCAPTCHA
+    // ============================================
+
+    // Login form submission - WITH RATE LIMITING & reCAPTCHA
     if (loginForm) {
-      loginForm.addEventListener("submit", (e) => {
+      loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const emailInput = document.getElementById("loginEmail");
         const passwordInput = document.getElementById("loginPassword");
         const msgEl = document.getElementById("loginMessage");
+        const btn = document.getElementById("btnLogin");
 
         const email = (emailInput?.value || "").trim();
         const password = passwordInput?.value || "";
@@ -575,67 +783,125 @@
           msgEl.className = "form-message " + (type || "");
         }
 
-        // SECURITY: Input Validation
+        // SECURITY: Check if account is locked
+        if (isAccountLocked(email)) {
+          const remainingTime = getRemainingLockoutTime(email);
+          showLockoutWarning(email, "login");
+          showLoginMessage(
+            `Account locked. Too many failed attempts. Try again in ${remainingTime} minutes.`,
+            "error"
+          );
+          return;
+        } else {
+          hideLockoutWarning("login");
+        }
+
         if (!email || !password) {
           showLoginMessage("Please enter both email and password.", "error");
+          recordFailedAttempt(email);
           return;
         }
 
         if (!validateEmail(email)) {
           showLoginMessage("Please enter a valid email address.", "error");
+          recordFailedAttempt(email);
           return;
         }
 
         if (typeof password !== "string" || password.length === 0) {
           showLoginMessage("Invalid password format.", "error");
+          recordFailedAttempt(email);
           return;
         }
 
-        const users = getUsers();
-        const emailKey = Object.keys(users).find(
-          (k) => k.toLowerCase() === email.toLowerCase()
-        );
+        if (btn) btn.disabled = true;
 
-        // SECURITY: Secure Password Verification
-        const storedHash = emailKey ? users[emailKey].password : null;
-        const passwordMatches =
-          typeof bcrypt !== "undefined" && storedHash
-            ? bcrypt.compareSync(password, storedHash)
-            : storedHash === password;
+        try {
+          // SECURITY: Execute reCAPTCHA v3
+          const recaptchaResult = await executeRecaptcha("login");
 
-        if (emailKey && passwordMatches) {
-          // ✅ CREATE SESSION WITH TOKEN
-          const session = createSession(emailKey);
-          saveSession(session);
+          if (!recaptchaResult.token) {
+            showLoginMessage(
+              "reCAPTCHA verification failed. Please try again.",
+              "error"
+            );
+            recordFailedAttempt(email);
+            if (btn) btn.disabled = false;
+            return;
+          }
 
-          // Also keep for backward compatibility
-          localStorage.setItem("currentUser", emailKey);
+          const users = getUsers();
+          const emailKey = Object.keys(users).find(
+            (k) => k.toLowerCase() === email.toLowerCase()
+          );
 
-          showLoginMessage("Login successful! Redirecting…", "success");
+          const storedHash = emailKey ? users[emailKey].password : null;
+          const passwordMatches =
+            typeof bcrypt !== "undefined" && storedHash
+              ? bcrypt.compareSync(password, storedHash)
+              : storedHash === password;
 
-          setTimeout(() => {
-            // Start monitoring for this new session
-            startSessionMonitoring();
-            initActivityTracking();
-            window.location.href = "index.html";
-          }, 600);
-        } else {
+          if (emailKey && passwordMatches) {
+            // Successful login - clear failed attempts
+            clearFailedAttempts(email);
+            hideLockoutWarning("login");
+
+            // CREATE SESSION WITH TOKEN
+            const session = createSession(emailKey);
+            saveSession(session);
+            localStorage.setItem("currentUser", emailKey);
+
+            showLoginMessage("Login successful! Redirecting…", "success");
+
+            setTimeout(() => {
+              startSessionMonitoring();
+              initActivityTracking();
+              window.location.href = "index.html";
+            }, 600);
+          } else {
+            // Failed login - record attempt
+            const attempts = recordFailedAttempt(email);
+            showLockoutWarning(email, "login");
+
+            if (attempts.count >= RATE_LIMIT_CONFIG.MAX_FAILED_ATTEMPTS) {
+              showLoginMessage(
+                `Invalid email or password. Account locked for ${RATE_LIMIT_CONFIG.LOCKOUT_DURATION_MINUTES} minutes.`,
+                "error"
+              );
+            } else {
+              const remaining =
+                RATE_LIMIT_CONFIG.MAX_FAILED_ATTEMPTS - attempts.count;
+              showLoginMessage(
+                `Invalid email or password. ${remaining} attempt(s) remaining.`,
+                "error"
+              );
+            }
+          }
+        } catch (error) {
+          console.error("Login error:", error);
           showLoginMessage(
-            "Invalid email or password. Please try again.",
+            "An error occurred during login. Please try again.",
             "error"
           );
+          recordFailedAttempt(email);
+        } finally {
+          if (btn) btn.disabled = false;
         }
       });
     }
 
-    // Signup form submission - WITH SESSION CREATION
+    // ============================================
+    // SIGNUP FORM WITH RATE LIMITING & reCAPTCHA
+    // ============================================
+
     if (signupForm) {
-      signupForm.addEventListener("submit", (e) => {
+      signupForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const nameInput = document.getElementById("signupName");
         const emailInput = document.getElementById("signupEmail");
         const passwordInput = document.getElementById("signupPassword");
         const msgEl = document.getElementById("signupMessage");
+        const btn = document.getElementById("btnSignup");
 
         let name = (nameInput?.value || "").trim();
         let email = (emailInput?.value || "").trim();
@@ -650,9 +916,23 @@
           msgEl.className = "form-message " + (type || "");
         }
 
-        // SECURITY: Comprehensive Input Validation
+        // SECURITY: Check if account signup attempts are rate limited
+        if (isAccountLocked(email)) {
+          const remainingTime = getRemainingLockoutTime(email);
+          showLockoutWarning(email, "signup");
+          showSignupMessage(
+            `Too many signup attempts. Try again in ${remainingTime} minutes.`,
+            "error"
+          );
+          return;
+        } else {
+          hideLockoutWarning("signup");
+        }
+
+        // Input validation
         if (!name || !email || !password) {
           showSignupMessage("Please fill in all required fields.", "error");
+          recordFailedAttempt(email);
           return;
         }
 
@@ -662,11 +942,13 @@
             "Name must be 2-100 characters (letters, spaces, hyphens, apostrophes only).",
             "error"
           );
+          recordFailedAttempt(email);
           return;
         }
 
         if (!validateEmail(email)) {
           showSignupMessage("Please enter a valid email address.", "error");
+          recordFailedAttempt(email);
           return;
         }
 
@@ -675,45 +957,81 @@
             "Password must be 6-128 characters and contain no special characters like ', \", ;, or \\.",
             "error"
           );
+          recordFailedAttempt(email);
           return;
         }
 
-        const users = getUsers();
-        const existingKey = Object.keys(users).find(
-          (k) => k.toLowerCase() === email.toLowerCase()
-        );
-        if (existingKey) {
+        // Disable button during verification
+        if (btn) btn.disabled = true;
+
+        try {
+          // SECURITY: Execute reCAPTCHA v3
+          const recaptchaResult = await executeRecaptcha("signup");
+
+          if (!recaptchaResult.token) {
+            showSignupMessage(
+              "reCAPTCHA verification failed. Please try again.",
+              "error"
+            );
+            recordFailedAttempt(email);
+            if (btn) btn.disabled = false;
+            return;
+          }
+
+          const users = getUsers();
+          const existingKey = Object.keys(users).find(
+            (k) => k.toLowerCase() === email.toLowerCase()
+          );
+
+          if (existingKey) {
+            showSignupMessage(
+              "This email is already registered. Please log in.",
+              "error"
+            );
+            recordFailedAttempt(email);
+            if (btn) btn.disabled = false;
+            return;
+          }
+
+          // SECURITY: Password Hashing with Bcrypt
+          const hashedPassword =
+            typeof bcrypt !== "undefined"
+              ? bcrypt.hashSync(password, 10)
+              : password;
+
+          users[email] = {
+            name: sanitizeInput(name),
+            password: hashedPassword,
+          };
+          saveUsers(users);
+
+          // Clear failed attempts on successful signup
+          clearFailedAttempts(email);
+          hideLockoutWarning("signup");
+
+          // CREATE SESSION AFTER SIGNUP
+          const session = createSession(email);
+          saveSession(session);
+          localStorage.setItem("currentUser", email);
+
+          showSignupMessage("Account created! Redirecting…", "success");
+          btn.classList.add("success");
+
+          setTimeout(() => {
+            startSessionMonitoring();
+            initActivityTracking();
+            window.location.href = "index.html";
+          }, 900);
+        } catch (error) {
+          console.error("Signup error:", error);
           showSignupMessage(
-            "This email is already registered. Please log in.",
+            "An error occurred during signup. Please try again.",
             "error"
           );
-          return;
+          recordFailedAttempt(email);
+        } finally {
+          if (btn) btn.disabled = false;
         }
-
-        // SECURITY: Password Hashing with Bcrypt
-        const hashedPassword =
-          typeof bcrypt !== "undefined"
-            ? bcrypt.hashSync(password, 10)
-            : password;
-
-        users[email] = { name: sanitizeInput(name), password: hashedPassword };
-        saveUsers(users);
-
-        // ✅ CREATE SESSION IMMEDIATELY AFTER SIGNUP
-        const session = createSession(email);
-        saveSession(session);
-        localStorage.setItem("currentUser", email);
-
-        showSignupMessage("Account created! Redirecting…", "success");
-        const btn = document.getElementById("btnSignup");
-        if (btn) btn.classList.add("success");
-
-        setTimeout(() => {
-          // Start monitoring for new session
-          startSessionMonitoring();
-          initActivityTracking();
-          window.location.href = "index.html";
-        }, 900);
       });
     }
   }

@@ -2367,6 +2367,93 @@ header .logout-btn:hover {
 }
 
 /* ============================================
+RATE LIMITING & LOCKOUT STYLES
+============================================ */
+
+.lockout-warning {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-left: 4px solid #ff5252;
+  animation: slideDown 0.3s ease;
+}
+
+.lockout-warning i {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.lockout-warning p {
+  margin: 0;
+  flex: 1;
+}
+
+.lockout-warning .countdown {
+  font-weight: 700;
+  color: #ffe6e6;
+  font-size: 15px;
+}
+
+.lockout-warning strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #ccc;
+}
+
+.auth-btn:disabled:hover {
+  background-color: #ccc;
+  transform: translateY(0);
+}
+
+.recaptcha-info {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  margin: 12px 0;
+  line-height: 1.4;
+}
+
+.recaptcha-info a {
+  color: #8b6f47;
+  text-decoration: none;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .lockout-warning {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .recaptcha-info {
+    font-size: 11px;
+  }
+}
+
+/* ============================================
    ANIMATIONS & KEYFRAMES
    ============================================ */
 

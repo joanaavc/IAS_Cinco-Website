@@ -17,146 +17,122 @@
     <link rel="stylesheet" href="cincostyles.css" />
   </head>
   <body class="auth-page-body">
-    <div class="auth-wrapper">
-      <!-- Logo Section -->
-      <div class="auth-logo">
-        <i class="fas fa-coffee"></i>
-        <h1>Cinco<span>Coffee</span></h1>
-        <p>Fuel your day, wherever you wander</p>
-      </div>
+    <!-- Login/Signup Forms -->
+    <div class="auth-container">
+      <div class="auth-box">
+        <!-- Tab Navigation -->
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-login">Login</button>
+          <button class="auth-tab" id="tab-signup">Sign Up</button>
+        </div>
 
-      <!-- Auth Container -->
-      <div class="auth-container">
-        <!-- Tabs -->
-        <div class="auth-tabs" role="tablist" aria-label="Authentication Tabs">
-          <button
-            type="button"
-            id="tab-login"
-            class="active"
-            aria-controls="loginForm"
+        <!-- Login Form -->
+        <form class="auth-form active" id="loginForm">
+          <h2>Welcome Back</h2>
+
+          <!-- Account Lockout Warning -->
+          <div
+            class="lockout-warning"
+            id="loginLockoutWarning"
+            style="display: none"
           >
-            Login
-          </button>
-          <button type="button" id="tab-signup" aria-controls="signupForm">
-            Sign Up
-          </button>
-        </div>
+            <i class="fas fa-lock"></i>
+            <p id="lockoutMessage"></p>
+          </div>
 
-        <!-- Form Container -->
-        <div class="form-container">
-          <!-- Login Form -->
-          <form id="loginForm" class="active">
-            <div class="form-group">
-              <label for="loginEmail">Email Address</label>
-              <div class="input-wrapper">
-                <i class="fas fa-envelope"></i>
-                <input
-                  type="email"
-                  id="loginEmail"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            </div>
+          <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input
+              type="email"
+              id="loginEmail"
+              placeholder="your@email.com"
+              required
+            />
+          </div>
 
-            <div class="form-group">
-              <label for="loginPassword">Password</label>
-              <div class="input-wrapper">
-                <i class="fas fa-lock"></i>
-                <input
-                  type="password"
-                  id="loginPassword"
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-            </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input
+              type="password"
+              id="loginPassword"
+              placeholder="••••••••"
+              required
+            />
+          </div>
 
-            <button type="submit" class="submit-btn" id="btnLogin">
-              Log In
-            </button>
+          <!-- reCAPTCHA Badge Info -->
+          <p class="recaptcha-info">
+            This site is protected by reCAPTCHA and the Google
+            <a href="https://policies.google.com/privacy">Privacy Policy</a> and
+            <a href="https://policies.google.com/terms">Terms of Service</a>
+            apply.
+          </p>
 
-            <div
-              class="form-message"
-              id="loginMessage"
-              aria-live="polite"
-            ></div>
+          <button type="submit" class="auth-btn" id="btnLogin">Login</button>
+          <div class="form-message" id="loginMessage"></div>
+        </form>
 
-            <div class="info-text">
-              <i class="fas fa-info-circle"></i>
-              Don't have an account? Click "Sign Up" above to create one.
-            </div>
-          </form>
+        <!-- Signup Form -->
+        <form class="auth-form" id="signupForm">
+          <h2>Create Account</h2>
 
-          <!-- Signup Form -->
-          <form id="signupForm">
-            <div class="form-group">
-              <label for="signupName">Full Name</label>
-              <div class="input-wrapper">
-                <i class="fas fa-user"></i>
-                <input
-                  type="text"
-                  id="signupName"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-            </div>
+          <!-- Account Lockout Warning -->
+          <div
+            class="lockout-warning"
+            id="signupLockoutWarning"
+            style="display: none"
+          >
+            <i class="fas fa-lock"></i>
+            <p id="signupLockoutMessage"></p>
+          </div>
 
-            <div class="form-group">
-              <label for="signupEmail">Email Address</label>
-              <div class="input-wrapper">
-                <i class="fas fa-envelope"></i>
-                <input
-                  type="email"
-                  id="signupEmail"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            </div>
+          <div class="form-group">
+            <label for="signupName">Full Name</label>
+            <input
+              type="text"
+              id="signupName"
+              placeholder="John Doe"
+              required
+            />
+          </div>
 
-            <div class="form-group">
-              <label for="signupPassword">Password</label>
-              <div class="input-wrapper">
-                <i class="fas fa-lock"></i>
-                <input
-                  type="password"
-                  id="signupPassword"
-                  placeholder="Create a password"
-                  required
-                />
-              </div>
-            </div>
+          <div class="form-group">
+            <label for="signupEmail">Email</label>
+            <input
+              type="email"
+              id="signupEmail"
+              placeholder="your@email.com"
+              required
+            />
+          </div>
 
-            <button type="submit" class="submit-btn" id="btnSignup">
-              Create Account
-            </button>
+          <div class="form-group">
+            <label for="signupPassword">Password</label>
+            <input
+              type="password"
+              id="signupPassword"
+              placeholder="••••••••"
+              required
+            />
+          </div>
 
-            <div
-              class="form-message"
-              id="signupMessage"
-              aria-live="polite"
-            ></div>
+          <!-- reCAPTCHA Badge Info -->
+          <p class="recaptcha-info">
+            This site is protected by reCAPTCHA and the Google
+            <a href="https://policies.google.com/privacy">Privacy Policy</a> and
+            <a href="https://policies.google.com/terms">Terms of Service</a>
+            apply.
+          </p>
 
-            <div class="info-text">
-              <i class="fas fa-shopping-cart"></i>
-              Create an account to add items to your cart and save them for
-              later.
-            </div>
-          </form>
-        </div>
-
-        <!-- Back Link -->
-        <div class="back-link">
-          <a href="index.html">
-            <i class="fas fa-arrow-left"></i> Back to Home
-          </a>
-        </div>
+          <button type="submit" class="auth-btn" id="btnSignup">Sign Up</button>
+          <div class="form-message" id="signupMessage"></div>
+        </form>
       </div>
     </div>
 
-    <!-- bcryptjs for client-side password hashing (local copy for offline use) -->
+    <!-- reCAPTCHA v3 Script (IMPORTANT: Replace with your own site key) -->
+    <script src="https://www.google.com/recaptcha/api.js?render=6LdZRhgsAAAAAA7o0EpsdmfO38VvnHxjNG6Ab0g2"></script>
+
     <script src="bcrypt.min.js"></script>
     <script src="cincoscript.js"></script>
   </body>
