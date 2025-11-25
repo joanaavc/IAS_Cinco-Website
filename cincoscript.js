@@ -7,6 +7,104 @@
   "use strict";
 
   // ============================================
+  // INPUT VALIDATION & SANITIZATION FUNCTIONS
+  // ============================================
+
+  /**
+   * SECURITY: Input Validation & Sanitization
+   * Prevents XSS, SQL Injection, and malicious input attacks
+   * All user inputs are validated before processing
+   */
+
+  function sanitizeInput(input) {
+    if (typeof input !== "string") return "";
+
+    // Remove HTML/script tags and dangerous characters
+    return input
+      .replace(/<[^>]*>/g, "") // Remove HTML tags
+      .replace(/javascript:/gi, "") // Remove javascript: protocol
+      .replace(/on\w+\s*=/gi, "") // Remove event handlers (onclick, etc.)
+      .trim();
+  }
+
+  function validateEmail(email) {
+    // RFC 5322 simplified email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return (
+      emailRegex.test(email) &&
+      email.length <= 254 &&
+      !email.includes("<") &&
+      !email.includes(">")
+    );
+  }
+
+  function validatePassword(password) {
+    // Check for minimum length and no dangerous characters
+    if (typeof password !== "string") return false;
+    if (password.length < 6 || password.length > 128) return false;
+    // Reject if contains obvious SQL injection patterns
+    if (/['";\\]/g.test(password)) return false;
+    return true;
+  }
+
+  function validateName(name) {
+    // Allow letters, spaces, hyphens, apostrophes only
+    const nameRegex = /^[a-zA-Z\s\-']{2,100}$/;
+    const sanitized = sanitizeInput(name);
+    return nameRegex.test(sanitized);
+  }
+
+  function validatePhoneNumber(phone) {
+    // Allow only digits, spaces, hyphens, parentheses, and +
+    const phoneRegex = /^[\d\s\-\(\)\+]{7,20}$/;
+    const sanitized = sanitizeInput(phone);
+    return phoneRegex.test(sanitized);
+  }
+
+  function validateAddress(address) {
+    // Max 500 chars, no script tags, allow common address characters
+    const sanitized = sanitizeInput(address);
+    return (
+      sanitized.length >= 5 &&
+      sanitized.length <= 500 &&
+      !sanitized.includes("<") &&
+      !sanitized.includes(">") &&
+      !sanitized.includes("{") &&
+      !sanitized.includes("}")
+    );
+  }
+
+  function validateProductName(name) {
+    // Product names: alphanumeric, spaces, hyphens, parentheses only
+    const nameRegex = /^[a-zA-Z0-9\s\-\(\)]{2,100}$/;
+    const sanitized = sanitizeInput(name);
+    return nameRegex.test(sanitized);
+  }
+
+  function validatePrice(price) {
+    // Price: positive number with max 2 decimals, max 5 digits before decimal
+    const priceRegex = /^\d{1,5}(\.\d{1,2})?$/;
+    return priceRegex.test(price);
+  }
+
+  function validateQuantity(quantity) {
+    // Quantity: positive integer between 1 and 999
+    const qty = parseInt(quantity);
+    return qty >= 1 && qty <= 999;
+  }
+
+  function validateTextarea(text, minLength = 5, maxLength = 1000) {
+    // For feedback, notes, messages
+    const sanitized = sanitizeInput(text);
+    return (
+      sanitized.length >= minLength &&
+      sanitized.length <= maxLength &&
+      !sanitized.includes("<script>") &&
+      !sanitized.includes("</script>")
+    );
+  }
+
+  // ============================================
   // HELPER FUNCTIONS
   // ============================================
 
@@ -109,7 +207,7 @@
   }
 
   // ============================================
-  // AUTH PAGE (LOGIN/SIGNUP)
+  // AUTH PAGE (LOGIN/SIGNUP) - UPDATED
   // ============================================
 
   function initAuthPage() {
@@ -127,12 +225,11 @@
         if (tabSignup) tabSignup.classList.remove("active");
         if (loginForm) loginForm.classList.add("active");
         if (signupForm) signupForm.classList.remove("active");
-        // Focus the first input in the login form for better UX
         try {
           const firstInput = loginForm?.querySelector("input");
           if (firstInput) firstInput.focus();
         } catch (err) {
-          // ignore focus errors in non-browser or unexpected environments
+          // ignore focus errors
         }
       });
     }
@@ -143,17 +240,16 @@
         if (tabLogin) tabLogin.classList.remove("active");
         if (signupForm) signupForm.classList.add("active");
         if (loginForm) loginForm.classList.remove("active");
-        // Focus the first input in the signup form for better UX
         try {
           const firstInput = signupForm?.querySelector("input");
           if (firstInput) firstInput.focus();
         } catch (err) {
-          // ignore focus errors in non-browser or unexpected environments
+          // ignore focus errors
         }
       });
     }
 
-    // Login form submission
+    // Login form submission - WITH VALIDATION
     if (loginForm) {
       loginForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -174,8 +270,21 @@
           msgEl.className = "form-message " + (type || "");
         }
 
+        // SECURITY: Input Validation
         if (!email || !password) {
           showLoginMessage("Please enter both email and password.", "error");
+          return;
+        }
+
+        // Validate email format
+        if (!validateEmail(email)) {
+          showLoginMessage("Please enter a valid email address.", "error");
+          return;
+        }
+
+        // Validate password format (basic checks)
+        if (typeof password !== "string" || password.length === 0) {
+          showLoginMessage("Invalid password format.", "error");
           return;
         }
 
@@ -186,14 +295,6 @@
         );
 
         // SECURITY: Secure Password Verification with Bcrypt
-        // When a user logs in, we use bcrypt.compareSync() to securely compare
-        // the entered password against the stored hash. This method:
-        // - Hashes the entered password and compares it to the stored hash
-        // - Is resistant to timing attacks (doesn't leak info through comparison time)
-        // - Returns true/false based on cryptographic verification, not string equality
-        // - Gracefully falls back to plaintext comparison if bcrypt is unavailable
-        //   (not recommended for production)
-        // See SECURITY.md for complete authentication flow documentation.
         const storedHash = emailKey ? users[emailKey].password : null;
         const passwordMatches =
           typeof bcrypt !== "undefined" && storedHash
@@ -213,7 +314,7 @@
       });
     }
 
-    // Signup form submission
+    // Signup form submission - WITH VALIDATION
     if (signupForm) {
       signupForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -222,8 +323,8 @@
         const passwordInput = document.getElementById("signupPassword");
         const msgEl = document.getElementById("signupMessage");
 
-        const name = (nameInput?.value || "").trim();
-        const email = (emailInput?.value || "").trim();
+        let name = (nameInput?.value || "").trim();
+        let email = (emailInput?.value || "").trim();
         const password = passwordInput?.value || "";
 
         function showSignupMessage(text, type) {
@@ -235,20 +336,34 @@
           msgEl.className = "form-message " + (type || "");
         }
 
+        // SECURITY: Comprehensive Input Validation
         if (!name || !email || !password) {
           showSignupMessage("Please fill in all required fields.", "error");
           return;
         }
 
-        // basic email format check
-        const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        if (!emailValid) {
+        // Sanitize name input
+        name = sanitizeInput(name);
+        if (!validateName(name)) {
+          showSignupMessage(
+            "Name must be 2-100 characters (letters, spaces, hyphens, apostrophes only).",
+            "error"
+          );
+          return;
+        }
+
+        // Validate email format
+        if (!validateEmail(email)) {
           showSignupMessage("Please enter a valid email address.", "error");
           return;
         }
 
-        if (password.length < 6) {
-          showSignupMessage("Password must be at least 6 characters.", "error");
+        // Validate password strength
+        if (!validatePassword(password)) {
+          showSignupMessage(
+            "Password must be 6-128 characters and contain no special characters like ', \", ;, or \\.",
+            "error"
+          );
           return;
         }
 
@@ -265,20 +380,13 @@
         }
 
         // SECURITY: Password Hashing with Bcrypt
-        // Before storing the password in localStorage, we hash it using bcrypt
-        // with 10 salt rounds. This ensures:
-        // - Passwords are NEVER stored in plaintext
-        // - Each password gets a unique salt, so identical passwords have different hashes
-        // - The hash is irreversible (one-way function) — attackers cannot reverse it
-        // - Even if localStorage is compromised, passwords remain secure
-        // See SECURITY.md for complete documentation.
         const hashedPassword =
           typeof bcrypt !== "undefined"
             ? bcrypt.hashSync(password, 10)
             : password;
 
-        // Store user with hashed password. Email casing is preserved but lookup is case-insensitive
-        users[email] = { name, password: hashedPassword };
+        // Store user with sanitized name and hashed password
+        users[email] = { name: sanitizeInput(name), password: hashedPassword };
         saveUsers(users);
         localStorage.setItem("currentUser", email);
 
@@ -621,7 +729,7 @@
   }
 
   // ============================================
-  // CHECKOUT PAGE
+  // CHECKOUT PAGE - UPDATED WITH VALIDATION
   // ============================================
 
   function initCheckoutPage() {
@@ -716,14 +824,23 @@
       placeOrderBtn.addEventListener("click", (e) => {
         e.preventDefault();
 
-        const firstName = document.getElementById("firstName")?.value;
-        const lastName = document.getElementById("lastName")?.value;
-        const email = document.getElementById("email")?.value;
-        const phone = document.getElementById("phone")?.value;
-        const address = document.getElementById("address")?.value;
-        const city = document.getElementById("city")?.value;
-        const zip = document.getElementById("zip")?.value;
+        const firstNameInput = document.getElementById("firstName");
+        const lastNameInput = document.getElementById("lastName");
+        const emailInput = document.getElementById("email");
+        const phoneInput = document.getElementById("phone");
+        const addressInput = document.getElementById("address");
+        const cityInput = document.getElementById("city");
+        const zipInput = document.getElementById("zip");
 
+        let firstName = (firstNameInput?.value || "").trim();
+        let lastName = (lastNameInput?.value || "").trim();
+        let email = (emailInput?.value || "").trim();
+        let phone = (phoneInput?.value || "").trim();
+        let address = (addressInput?.value || "").trim();
+        let city = (cityInput?.value || "").trim();
+        let zip = (zipInput?.value || "").trim();
+
+        // SECURITY: Input Validation for Checkout
         if (
           !firstName ||
           !lastName ||
@@ -733,10 +850,64 @@
           !city ||
           !zip
         ) {
-          alert("Please fill in all required fields");
+          alert("Please fill in all required fields.");
           return;
         }
 
+        // Sanitize all inputs
+        firstName = sanitizeInput(firstName);
+        lastName = sanitizeInput(lastName);
+        address = sanitizeInput(address);
+        city = sanitizeInput(city);
+        zip = sanitizeInput(zip);
+
+        // Validate each field
+        if (!validateName(firstName)) {
+          alert(
+            "First name must be 2-100 characters (letters, spaces, hyphens, apostrophes only)."
+          );
+          return;
+        }
+
+        if (!validateName(lastName)) {
+          alert(
+            "Last name must be 2-100 characters (letters, spaces, hyphens, apostrophes only)."
+          );
+          return;
+        }
+
+        if (!validateEmail(email)) {
+          alert("Please enter a valid email address.");
+          return;
+        }
+
+        if (!validatePhoneNumber(phone)) {
+          alert(
+            "Please enter a valid phone number (7-20 characters, digits, spaces, hyphens, +, parentheses)."
+          );
+          return;
+        }
+
+        if (!validateAddress(address)) {
+          alert("Address must be 5-500 characters and contain no HTML tags.");
+          return;
+        }
+
+        if (!validateName(city)) {
+          alert("City must be 2-100 characters (letters only).");
+          return;
+        }
+
+        // Validate ZIP code format (alphanumeric, 3-10 chars)
+        const zipRegex = /^[a-zA-Z0-9\s\-]{3,10}$/;
+        if (!zipRegex.test(zip)) {
+          alert(
+            "ZIP code must be 3-10 characters (alphanumeric, hyphens, spaces)."
+          );
+          return;
+        }
+
+        // All validations passed
         const orderNumber = Math.floor(10000 + Math.random() * 90000);
         const orderNumberEl = document.getElementById("orderNumber");
         if (orderNumberEl) orderNumberEl.textContent = orderNumber;
@@ -765,7 +936,7 @@
   }
 
   // ============================================
-  // CONTACT PAGE
+  // CONTACT PAGE - UPDATED WITH VALIDATION
   // ============================================
 
   function initContactPage() {
@@ -775,7 +946,53 @@
     if (feedbackForm) {
       feedbackForm.addEventListener("submit", function (e) {
         e.preventDefault();
+
+        const nameInput = document.getElementById("feedbackName");
+        const emailInput = document.getElementById("feedbackEmail");
+        const subjectInput = document.getElementById("feedbackSubject");
+        const messageInput = document.getElementById("feedbackMessage");
         const successEl = document.getElementById("feedbackSuccess");
+
+        let name = (nameInput?.value || "").trim();
+        let email = (emailInput?.value || "").trim();
+        let subject = (subjectInput?.value || "").trim();
+        let message = (messageInput?.value || "").trim();
+
+        // SECURITY: Input Validation for Feedback
+        if (!name || !email || !subject || !message) {
+          alert("Please fill in all required fields.");
+          return;
+        }
+
+        // Sanitize inputs
+        name = sanitizeInput(name);
+        subject = sanitizeInput(subject);
+        message = sanitizeInput(message);
+
+        // Validate each field
+        if (!validateName(name)) {
+          alert(
+            "Name must be 2-100 characters (letters, spaces, hyphens, apostrophes only)."
+          );
+          return;
+        }
+
+        if (!validateEmail(email)) {
+          alert("Please enter a valid email address.");
+          return;
+        }
+
+        if (!validateTextarea(subject, 5, 200)) {
+          alert("Subject must be 5-200 characters with no HTML tags.");
+          return;
+        }
+
+        if (!validateTextarea(message, 10, 1000)) {
+          alert("Message must be 10-1000 characters with no HTML tags.");
+          return;
+        }
+
+        // All validations passed - show success
         if (successEl) {
           successEl.style.display = "block";
           setTimeout(() => {
