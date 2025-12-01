@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "lib": ["es2017", "dom"],
+    "checkJs": false
+  },
+  "exclude": ["node_modules", "bcrypt.min.js", "**/*.min.js"]
+}
