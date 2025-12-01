@@ -15,124 +15,293 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <link rel="stylesheet" href="cincostyles.css" />
+    <script>
+      window.__RECAPTCHA_SITE_KEY = "6LdZRhgsAAAAAA7o0EpsdmfO38VvnHxjNG6Ab0g2";
+    </script>
   </head>
   <body class="auth-page-body">
-    <!-- Login/Signup Forms -->
-    <div class="auth-container">
+    <div class="auth-wrapper">
+      <!-- Logo on top -->
+      <div class="auth-logo">
+        <i class="fas fa-coffee"></i>
+      </div>
+
+      <!-- Top: branding / tagline (full width) -->
+      <div class="auth-hero">
+        <h1>CincoCoffee</h1>
+        <p>
+          Fuel your day, wherever you wander. Fast, premium coffee for people on
+          the move — sign in or create an account to save favorites and checkout
+        </p>
+      </div>
+
+      <!-- Right: auth card -->
       <div class="auth-box">
-        <!-- Tab Navigation -->
-        <div class="auth-tabs">
-          <button class="auth-tab active" id="tab-login">Login</button>
-          <button class="auth-tab" id="tab-signup">Sign Up</button>
+        <!-- Tab Buttons -->
+        <div class="auth-tabs" role="tablist">
+          <button
+            id="tab-login"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="loginForm"
+            class="auth-tab active"
+          >
+            Log In
+          </button>
+          <button
+            id="tab-signup"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="signupForm"
+            class="auth-tab"
+          >
+            Sign Up
+          </button>
         </div>
 
-        <!-- Login Form -->
-        <form class="auth-form active" id="loginForm">
-          <h2>Welcome Back</h2>
-
-          <!-- Account Lockout Warning -->
-          <div
-            class="lockout-warning"
-            id="loginLockoutWarning"
-            style="display: none"
+        <div class="form-container">
+          <!-- LOGIN FORM -->
+          <form
+            class="auth-form active"
+            id="loginForm"
+            role="tabpanel"
+            aria-labelledby="tab-login"
+            autocomplete="on"
+            novalidate
           >
-            <i class="fas fa-lock"></i>
-            <p id="lockoutMessage"></p>
-          </div>
+            <h2>Welcome Back</h2>
 
-          <div class="form-group">
-            <label for="loginEmail">Email</label>
-            <input
-              type="email"
-              id="loginEmail"
-              placeholder="your@email.com"
-              required
-            />
-          </div>
+            <!-- Message Container -->
+            <div
+              id="login-message"
+              class="form-message"
+              style="display: none"
+            ></div>
 
-          <div class="form-group">
-            <label for="loginPassword">Password</label>
-            <input
-              type="password"
-              id="loginPassword"
-              placeholder="••••••••"
-              required
-            />
-          </div>
+            <div
+              id="loginForm-message"
+              class="form-message"
+              style="display: none"
+            ></div>
 
-          <!-- reCAPTCHA Badge Info -->
-          <p class="recaptcha-info">
-            This site is protected by reCAPTCHA and the Google
-            <a href="https://policies.google.com/privacy">Privacy Policy</a> and
-            <a href="https://policies.google.com/terms">Terms of Service</a>
-            apply.
-          </p>
+            <!-- Email Input -->
+            <div class="input-group">
+              <label for="loginEmail">Email Address</label>
+              <div class="input-wrapper">
+                <span class="input-icon"><i class="fas fa-envelope"></i></span>
+                <input
+                  type="email"
+                  id="loginEmail"
+                  name="email"
+                  placeholder="your@email.com"
+                  required
+                  autocomplete="email"
+                />
+              </div>
+            </div>
 
-          <button type="submit" class="auth-btn" id="btnLogin">Login</button>
-          <div class="form-message" id="loginMessage"></div>
-        </form>
+            <!-- Password Input -->
+            <div class="input-group">
+              <label for="loginPassword">Password</label>
+              <div class="input-wrapper">
+                <span class="input-icon"><i class="fas fa-lock"></i></span>
+                <input
+                  type="password"
+                  id="loginPassword"
+                  name="password"
+                  placeholder="••••••••"
+                  required
+                  autocomplete="current-password"
+                />
+                <button
+                  type="button"
+                  class="toggle-password"
+                  aria-label="Toggle password visibility"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
 
-        <!-- Signup Form -->
-        <form class="auth-form" id="signupForm">
-          <h2>Create Account</h2>
+            <!-- Error/Success Message -->
+            <div
+              id="loginMessage"
+              class="form-message"
+              role="alert"
+              aria-live="polite"
+            ></div>
 
-          <!-- Account Lockout Warning -->
+            <!-- Submit Button -->
+            <button type="submit" class="auth-btn" id="btnLogin">
+              <span>Log In</span>
+              <i class="fas fa-spinner fa-spin" style="display: none"></i>
+            </button>
+
+            <!-- Forgot Password Link -->
+            <div class="form-footer">
+              <a href="#" class="forgot-password">Forgot your password?</a>
+            </div>
+          </form>
+
+          <!-- Add this div BEFORE or AFTER your login form -->
           <div
-            class="lockout-warning"
-            id="signupLockoutWarning"
-            style="display: none"
+            id="messageDiv"
+            style="
+              margin: 15px 0;
+              padding: 12px;
+              border-radius: 4px;
+              text-align: center;
+              display: none;
+              font-weight: bold;
+              background-color: #d4edda;
+              color: #155724;
+              border: 1px solid #c3e6cb;
+            "
+          ></div>
+
+          <!-- SIGNUP FORM -->
+          <form
+            class="auth-form"
+            id="signupForm"
+            role="tabpanel"
+            aria-labelledby="tab-signup"
+            autocomplete="on"
+            novalidate
           >
-            <i class="fas fa-lock"></i>
-            <p id="signupLockoutMessage"></p>
-          </div>
+            <h2>Create Your Account</h2>
 
-          <div class="form-group">
-            <label for="signupName">Full Name</label>
-            <input
-              type="text"
-              id="signupName"
-              placeholder="John Doe"
-              required
-            />
-          </div>
+            <!-- Message Container -->
+            <div
+              id="signup-message"
+              class="form-message"
+              style="display: none"
+            ></div>
 
-          <div class="form-group">
-            <label for="signupEmail">Email</label>
-            <input
-              type="email"
-              id="signupEmail"
-              placeholder="your@email.com"
-              required
-            />
-          </div>
+            <div
+              id="signupForm-message"
+              class="form-message"
+              style="display: none"
+            ></div>
 
-          <div class="form-group">
-            <label for="signupPassword">Password</label>
-            <input
-              type="password"
-              id="signupPassword"
-              placeholder="••••••••"
-              required
-            />
-          </div>
+            <!-- Full Name Input -->
+            <div class="input-group">
+              <label for="signupName">Full Name</label>
+              <div class="input-wrapper">
+                <span class="input-icon"><i class="fas fa-user"></i></span>
+                <input
+                  type="text"
+                  id="signupName"
+                  name="name"
+                  placeholder="John Doe"
+                  required
+                  autocomplete="name"
+                />
+              </div>
+            </div>
 
-          <!-- reCAPTCHA Badge Info -->
-          <p class="recaptcha-info">
-            This site is protected by reCAPTCHA and the Google
-            <a href="https://policies.google.com/privacy">Privacy Policy</a> and
-            <a href="https://policies.google.com/terms">Terms of Service</a>
-            apply.
-          </p>
+            <!-- Email Input -->
+            <div class="input-group">
+              <label for="signupEmail">Email Address</label>
+              <div class="input-wrapper">
+                <span class="input-icon"><i class="fas fa-envelope"></i></span>
+                <input
+                  type="email"
+                  id="signupEmail"
+                  name="email"
+                  placeholder="your@email.com"
+                  required
+                  autocomplete="email"
+                />
+              </div>
+            </div>
 
-          <button type="submit" class="auth-btn" id="btnSignup">Sign Up</button>
-          <div class="form-message" id="signupMessage"></div>
-        </form>
+            <!-- Password Input -->
+            <div class="input-group">
+              <label for="signupPassword">Password</label>
+              <div class="input-wrapper">
+                <span class="input-icon"><i class="fas fa-lock"></i></span>
+                <input
+                  type="password"
+                  id="signupPassword"
+                  name="password"
+                  placeholder="••••••••"
+                  required
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="toggle-password"
+                  aria-label="Toggle password visibility"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <small class="password-hint">Must be at least 6 characters</small>
+            </div>
+
+            <!-- Confirm Password Input -->
+            <div class="input-group">
+              <label for="signupConfirm">Confirm Password</label>
+              <div class="input-wrapper">
+                <span class="input-icon"><i class="fas fa-lock"></i></span>
+                <input
+                  type="password"
+                  id="signupConfirm"
+                  name="confirm"
+                  placeholder="••••••••"
+                  required
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="toggle-password"
+                  aria-label="Toggle password visibility"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Error/Success Message -->
+            <div
+              id="signupMessage"
+              class="form-message"
+              role="alert"
+              aria-live="polite"
+            ></div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="auth-btn" id="btnSignup">
+              <span>Create Account</span>
+              <i class="fas fa-spinner fa-spin" style="display: none"></i>
+            </button>
+
+            <!-- Terms Agreement -->
+            <div class="form-footer">
+              <small>
+                By signing up, you agree to our
+                <a href="#">Terms of Service</a> and
+                <a href="#">Privacy Policy</a>
+              </small>
+            </div>
+          </form>
+        </div>
+
+        <!-- Back to Home Button -->
+        <div class="back-to-home-container">
+          <a href="index.html" class="back-to-home">
+            <i class="fas fa-arrow-left"></i> Back to Home
+          </a>
+        </div>
       </div>
     </div>
 
-    <!-- reCAPTCHA v3 Script (IMPORTANT: Replace with your own site key) -->
-    <script src="https://www.google.com/recaptcha/api.js?render=6LdZRhgsAAAAAA7o0EpsdmfO38VvnHxjNG6Ab0g2"></script>
+    <!-- Load bcryptjs from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.js"></script>
 
+    <!-- THEN LOAD YOUR SCRIPT -->
     <script src="bcrypt.min.js"></script>
     <script src="cincoscript.js"></script>
   </body>
