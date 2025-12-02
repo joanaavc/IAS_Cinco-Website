@@ -3815,7 +3815,12 @@ footer {
     margin-bottom: 5px;
     line-height: 1.3;
     display: -webkit-box;
+    display: -webkit-box;
+    display: box;
+    -webkit-box-orient: vertical;
+    box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2; /* Standard property for compatibility */
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
